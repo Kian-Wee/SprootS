@@ -10,16 +10,14 @@
 */
 
 #include <Arduino.h>
-#include <WiFi.h>
-#include <WiFiClientSecure.h>
+
 #include "soc/soc.h"
 #include "soc/rtc_cntl_reg.h"
 #include "esp_camera.h"
 #include <UniversalTelegramBot.h>
 #include <ArduinoJson.h> //make sure library is 5.x
 
-const char* ssid = "";
-const char* password = "";
+
 
 // Initialize Telegram BOT
 String BOTtoken = "";  // your Bot Token (Get from Botfather)
@@ -27,7 +25,7 @@ String BOTtoken = "";  // your Bot Token (Get from Botfather)
 // Use @myidbot to find out the chat ID of an individual or a group
 // Also note that you need to click "start" on a bot before it can
 // message you
-String CHAT_ID = "504881948";
+String CHAT_ID = "";
 
 bool sendPhoto = false;
 
@@ -125,11 +123,13 @@ void handleNewMessages(int numNewMessages) {
     Serial.println(text);
     
     String from_name = bot.messages[i].from_name;
-    if (text == "/start") {
+    if (text == "/start" or text == "/help" or text == "help" or text == "Help") {
       String welcome = "Welcome , " + from_name + "\n";
       welcome += "Use the following commands to interact with the ESP32-CAM \n";
       welcome += "/photo : takes a new photo\n";
       welcome += "/flash : toggles flash LED \n";
+      welcome += "/moisturelevel : checks moisture of soil \n";
+      welcome += "/lightlevel : checks light intensity \n";
       bot.sendMessage(CHAT_ID, welcome, "");
     }
     if (text == "/flash") {
@@ -140,6 +140,12 @@ void handleNewMessages(int numNewMessages) {
     if (text == "/photo") {
       sendPhoto = true;
       Serial.println("New photo request");
+    }
+    if (text== "/moisturelevel"){
+      bot.sendMessage(CHAT_ID, String(wetnesspercentage*100), "");
+    }
+    if (text== "/lightlevel"){
+      bot.sendMessage(CHAT_ID, String(brightnesspercentage*100), "");
     }
   }
 }
@@ -230,8 +236,6 @@ String sendPhotoTelegram() {
 
 void telesetup(){
   WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); 
-  // Init Serial Monitor
-  Serial.begin(115200);
 
   // Set LED Flash as output
   pinMode(FLASH_LED_PIN, OUTPUT);
@@ -240,19 +244,6 @@ void telesetup(){
   // Config and init the camera
   configInitCamera();
 
-  // Connect to Wi-Fi
-  WiFi.mode(WIFI_STA);
-  Serial.println();
-  Serial.print("Connecting to ");
-  Serial.println(ssid);
-  WiFi.begin(ssid, password);  
-  while (WiFi.status() != WL_CONNECTED) {
-    Serial.print(".");
-    delay(500);
-  }
-  Serial.println();
-  Serial.print("ESP32-CAM IP Address: ");
-  Serial.println(WiFi.localIP()); 
 }
 
 void teleloop() {
