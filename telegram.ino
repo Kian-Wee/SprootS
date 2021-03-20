@@ -32,34 +32,43 @@ bool sendPhoto = false;
 WiFiClientSecure clientTCP;
 UniversalTelegramBot bot(BOTtoken, clientTCP);
 
-#define FLASH_LED_PIN 4
-bool flashState = LOW;
 
 //Checks for new messages every 1 second.
 int botRequestDelay = 1000;
 unsigned long lastTimeBotRan;
 
-//CAMERA_MODEL_AI_THINKER
-#define PWDN_GPIO_NUM     32
-#define RESET_GPIO_NUM    -1
-#define XCLK_GPIO_NUM      0
-#define SIOD_GPIO_NUM     26
-#define SIOC_GPIO_NUM     27
+#define FLASH_LED_PIN 4
+bool flashState = LOW;
 
-#define Y9_GPIO_NUM       35
-#define Y8_GPIO_NUM       34
-#define Y7_GPIO_NUM       39
-#define Y6_GPIO_NUM       36
-#define Y5_GPIO_NUM       21
-#define Y4_GPIO_NUM       19
-#define Y3_GPIO_NUM       18
-#define Y2_GPIO_NUM        5
-#define VSYNC_GPIO_NUM    25
-#define HREF_GPIO_NUM     23
-#define PCLK_GPIO_NUM     22
+String prevtext = "";
 
 
 void configInitCamera(){
+  Serial.println("Running configInitCamera");
+
+  // #if defined(CAMERA_MODEL_AI_THINKER)
+
+  //CAMERA_MODEL_AI_THINKER
+  #define PWDN_GPIO_NUM     32
+  #define RESET_GPIO_NUM    -1
+  #define XCLK_GPIO_NUM      0
+  #define SIOD_GPIO_NUM     26
+  #define SIOC_GPIO_NUM     27
+
+  #define Y9_GPIO_NUM       35
+  #define Y8_GPIO_NUM       34
+  #define Y7_GPIO_NUM       39
+  #define Y6_GPIO_NUM       36
+  #define Y5_GPIO_NUM       21
+  #define Y4_GPIO_NUM       19
+  #define Y3_GPIO_NUM       18
+  #define Y2_GPIO_NUM        5
+  #define VSYNC_GPIO_NUM    25
+  #define HREF_GPIO_NUM     23
+  #define PCLK_GPIO_NUM     22
+
+// #endif
+
   camera_config_t config;
   config.ledc_channel = LEDC_CHANNEL_0;
   config.ledc_timer = LEDC_TIMER_0;
@@ -82,6 +91,7 @@ void configInitCamera(){
   config.xclk_freq_hz = 20000000;
   config.pixel_format = PIXFORMAT_JPEG;
 
+  Serial.println("Allocating camera buffers");
   //init with high specs to pre-allocate larger buffers
   if(psramFound()){
     config.frame_size = FRAMESIZE_UXGA;
@@ -93,14 +103,16 @@ void configInitCamera(){
     config.fb_count = 1;
   }
   
+  Serial.println("Initalising camera");
   // camera init
-  esp_err_t err = esp_camera_init(&config);
+  esp_err_t err = esp_camera_init(&config); //CAUSING CORE PANIC IF ADC IS INIT FIRST
   if (err != ESP_OK) {
     Serial.printf("Camera init failed with error 0x%x", err);
     delay(1000);
     ESP.restart();
   }
 
+  Serial.println("Reducing frame size for frame rate");
   // Drop down frame size for higher initial frame rate
   sensor_t * s = esp_camera_sensor_get();
   s->set_framesize(s, FRAMESIZE_CIF);  // UXGA|SXGA|XGA|SVGA|VGA|CIF|QVGA|HQVGA|QQVGA
@@ -130,6 +142,8 @@ void handleNewMessages(int numNewMessages) {
       welcome += "/flash : toggles flash LED \n";
       welcome += "/moisturelevel : checks moisture of soil \n";
       welcome += "/lightlevel : checks light intensity \n";
+      welcome += "/pump : water plants \n";
+      welcome += "/resettank : reset water tank after refilling \n";
       bot.sendMessage(CHAT_ID, welcome, "");
     }
     if (text == "/flash") {
@@ -146,6 +160,24 @@ void handleNewMessages(int numNewMessages) {
     }
     if (text== "/lightlevel"){
       bot.sendMessage(CHAT_ID, String(brightnesspercentage*100), "");
+    }
+    if (text== "/pump"){
+      bot.sendMessage(CHAT_ID, "Target water percentage is: " + String(targetpercentage), "");
+      bot.sendMessage(CHAT_ID, "Enter new percentage from(0 to 100):", "");
+      //read message
+    }
+    if (prevtext== "/pump"){
+      if (text.toInt() >=0 and text.toInt() <=100){
+        targetpercentage=text.toInt()/100;
+      }else{
+        bot.sendMessage(CHAT_ID, "Invalid percentage", "");
+      }
+    }
+    prevtext=text;
+
+    if (text== "/resettank"){
+      bot.sendMessage(CHAT_ID, "Water tank has now been filled", "");
+      tankempty=false;
     }
   }
 }
@@ -235,6 +267,7 @@ String sendPhotoTelegram() {
 }
 
 void telesetup(){
+  Serial.println("Running telesetup");
   WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); 
 
   // Set LED Flash as output
@@ -242,15 +275,22 @@ void telesetup(){
   digitalWrite(FLASH_LED_PIN, flashState);
 
   // Config and init the camera
-  configInitCamera();
+  if (CameraEN==true){
+    configInitCamera();
+  }
 
+  Serial.println("Successfully initalised telesetup");
 }
 
 void teleloop() {
-  //Serial.println("Running loop");
+
   if (sendPhoto) {
-    Serial.println("Preparing photo");
-    sendPhotoTelegram(); 
+    if (CameraEN == true){
+      Serial.println("Preparing photo");
+      sendPhotoTelegram(); 
+    }else{
+      Serial.println("No camera detected, not sending photo");
+    }
     sendPhoto = false; 
   }
   if (millis() > lastTimeBotRan + botRequestDelay)  {
@@ -268,4 +308,11 @@ void teleloop() {
     }
     lastTimeBotRan = millis();
   }
+}
+
+//Simple function to send telegram messages
+void sendtelegrammessage(const char* newmessage){
+  bot.sendMessage(CHAT_ID, String(newmessage),"");
+  Serial.print("Sent this message via telegram: ");
+  Serial.println(newmessage);
 }
