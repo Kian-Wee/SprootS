@@ -36,21 +36,6 @@ void webserversetup() {
   digitalWrite(output26, LOW);
   digitalWrite(output27, LOW);
 
-//   // Connect to Wi-Fi network with SSID and password
-//   Serial.print("Connecting to ");
-//   Serial.println(ssid);
-//   WiFi.begin(ssid, password);
-//   while (WiFi.status() != WL_CONNECTED) {
-//     delay(500);
-//     Serial.print(".");
-//   }
-//   // Print local IP address and start web server
-//   Serial.println("");
-//   Serial.println("WiFi connected.");
-//   Serial.println("IP address: ");
-//   Serial.println(WiFi.localIP());
-
-
   // Set up mDNS responder:
   // - first argument is the domain name, in this example
   //   the fully-qualified domain name is "esp8266.local"
@@ -163,6 +148,9 @@ void webserverloop(){
             client.println("<p>Current moisture level: " + String(a) + "</p>");
             client.println("<p>Current light level: " + String(LDRL) + "</p>");
             client.println("<p>Tank empty check = " + String(tankempty) + "</p>");
+            
+            client.println("<p>Light level: " + String(lightreading) + "</p>");
+
             
             // Break out of the while loop
             break;

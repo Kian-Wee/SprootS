@@ -9,12 +9,15 @@
   copies or substantial portions of the Software.
 */
 
+//previously tested with 1.1.0, new compatability with 1.1.3 and json 6 is untested
+
 #include <Arduino.h>
 
 #include "soc/soc.h"
 #include "soc/rtc_cntl_reg.h"
 #include "esp_camera.h"
 #include <UniversalTelegramBot.h>
+#include <WiFiClientSecure.h>
 #include <ArduinoJson.h> //make sure library is 5.x
 
 
@@ -42,6 +45,10 @@ bool flashState = LOW;
 
 String prevtext = "";
 
+extern int lightreading; // declare as global variable
+extern double tempreading;
+extern double pressurereading;
+extern double humidityreading;
 
 void configInitCamera(){
   Serial.println("Running configInitCamera");
@@ -140,10 +147,11 @@ void handleNewMessages(int numNewMessages) {
       welcome += "Use the following commands to interact with the ESP32-CAM \n";
       welcome += "/photo : takes a new photo\n";
       welcome += "/flash : toggles flash LED \n";
-      welcome += "/moisturelevel : checks moisture of soil \n";
-      welcome += "/lightlevel : checks light intensity \n";
       welcome += "/pump : water plants \n";
       welcome += "/resettank : reset water tank after refilling \n";
+      welcome += "/sensor : show sensor readings \n";
+      welcome += "/moisture : checks moisture of soil \n";
+      welcome += "/light : checks light intensity \n";
       bot.sendMessage(CHAT_ID, welcome, "");
     }
     if (text == "/flash") {
@@ -155,11 +163,28 @@ void handleNewMessages(int numNewMessages) {
       sendPhoto = true;
       Serial.println("New photo request");
     }
-    if (text== "/moisturelevel"){
+    if (text== "/sensor"){
+      String message="Soil Moisture:" + String(wetnesspercentage*100) + "\n";
+      message +="Light:" + String(lightreading) +"lux" + "\n";
+      message +="Temperature:" + String(tempreading) +"C" + "\n";
+      message +="Pressure:" + String(pressurereading) + "\n";
+      message +="Humidity:" + String(humidityreading) + "\n";
+      bot.sendMessage(CHAT_ID, message, "");
+    }
+    if (text== "/moisture"){
       bot.sendMessage(CHAT_ID, String(wetnesspercentage*100), "");
     }
-    if (text== "/lightlevel"){
-      bot.sendMessage(CHAT_ID, String(brightnesspercentage*100), "");
+    if (text== "/light"){
+      bot.sendMessage(CHAT_ID, String(lightreading), "");
+    }
+    if (text== "/temperature"){
+      bot.sendMessage(CHAT_ID, String(tempreading), "");
+    }
+    if (text== "/pressure"){
+      bot.sendMessage(CHAT_ID, String(pressurereading), "");
+    }
+    if (text== "/humidity"){
+      bot.sendMessage(CHAT_ID, String(humidityreading), "");
     }
     if (text== "/pump"){
       bot.sendMessage(CHAT_ID, "Target water percentage is: " + String(targetpercentage), "");
@@ -276,8 +301,11 @@ void telesetup(){
 
   // Config and init the camera
   if (CameraEN==true){
+    Serial.println("Initalising Camera");
     configInitCamera();
   }
+
+  clientTCP.setCACert(TELEGRAM_CERTIFICATE_ROOT); // Add root certificate for api.telegram.org
 
   Serial.println("Successfully initalised telesetup");
 }
@@ -313,6 +341,13 @@ void teleloop() {
 //Simple function to send telegram messages
 void sendtelegrammessage(const char* newmessage){
   bot.sendMessage(CHAT_ID, String(newmessage),"");
+  Serial.print("Sent this message via telegram: ");
+  Serial.println(newmessage);
+}
+
+//Simple function to send telegram messages
+void sendtelegrammessagestring(String newmessage){
+  bot.sendMessage(CHAT_ID, newmessage,"");
   Serial.print("Sent this message via telegram: ");
   Serial.println(newmessage);
 }
