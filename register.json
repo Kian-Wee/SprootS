@@ -1,0 +1,30 @@
+[
+    {
+      "title": "Register Device",
+      "uri": "/register_device",
+      "menu": true,
+      "element": [
+        {
+          "name": "header",
+          "type": "ACText",
+          "value": "Register Device"
+        },
+        {
+          "name": "caption1",
+          "type": "ACText",
+          "value": "Register device to your account by entering ID"
+        },
+        {
+          "name": "submit",
+          "type": "ACInput",
+          "label": "Enter ID"
+        },
+        {
+          "name": "submit",
+          "type": "ACSubmit",
+          "value": "SUBMIT",
+          "uri": "/submit"
+        }
+      ]
+    }
+  ]

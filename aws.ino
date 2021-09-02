@@ -59,32 +59,60 @@ void connectAWS()
 
 void publishMessage()
 {
-  StaticJsonDocument<384> doc; //too small
-  //DynamicJsonDocument doc(2048);
-  doc["time"] = millis();
-  doc["Light"] = lightreading;
-  doc["Temperature"] = tempreading;
-  doc["Pressure"] = pressurereading;
-  doc["Humidity"] = humidityreading;
+  //https://docs.aws.amazon.com/general/latest/gr/iot-core.html#iot-protocol-limits
+  //128B maximum for AWS 
 
-  doc["Features"]["Water Subsystem"]=WaterEN;
-  doc["Features"]["LED Subsystem"]= LEDEN;
-  doc["Features"]["Telegram Subsystem"]= TeleEN;
-  doc["Features"]["Local Web Server"]= ServerEN;
-  doc["Features"]["AWS"]= AWSEN;
+  // StaticJsonDocument<200> doc; //too small
+  // This json document is 378B
+  //DynamicJsonDocument  doc(400);
+  // doc["time"] = millis();
+  // doc["Light"] = lightreading;
+  // doc["Temperature"] = tempreading;
+  // doc["Pressure"] = pressurereading;
+  // doc["Humidity"] = humidityreading;
 
-  doc["Device Info"]["Firmware"]="Sproot V4";
-  doc["Device Info"]["Microcontroller"] = "Firebeetle32";
+  // doc["Features"]["Water Subsystem"]=WaterEN;
+  // doc["Features"]["LED Subsystem"]= LEDEN;
+  // doc["Features"]["Telegram Subsystem"]= TeleEN;
+  // doc["Features"]["Local Web Server"]= ServerEN;
+  // doc["Features"]["AWS"]= AWSEN;
 
-  doc["Power Saving Mode"]["Enabled"]= Powersaving;
-  doc["Power Saving Mode"]["Sleep Duration"]= sleepduration;
+  // doc["Device Info"]["Firmware"]="Sproot V4";
+  // doc["Device Info"]["Microcontroller"] = "Firebeetle32";
 
-  doc["Alerts"]["Irrigation system has been turned on"]=watered;
-  doc["Alerts"]["Status of LED lights"]=LEDState;
+  // doc["Power Saving Mode"]["Enabled"]= Powersaving;
+  // doc["Power Saving Mode"]["Sleep Duration"]= sleepduration;
+
+  // doc["Alerts"]["Irrigation system has been turned on"]=watered;
+  // doc["Alerts"]["Status of LED lights"]=LEDState;
+
+  //optimised document
+  StaticJsonDocument<300> doc;
+  doc["Li"] = lightreading;
+  doc["Temp"] = tempreading;
+  doc["Pre"] = pressurereading;
+  doc["Hum"] = humidityreading;
+
+  doc["F"]["Water"]=WaterEN;
+  doc["F"]["LED"]= LEDEN;
+  doc["F"]["Tele"]= TeleEN;
+  doc["F"]["Web"]= ServerEN;
+  doc["F"]["AWS"]= AWSEN;
+
+  doc["PS"]["On"]= Powersaving;
+  doc["PS"]["Sleep"]= sleepduration;
+
+  doc["Alert"]["Irr"]=watered;
+  doc["Alert"]["LED"]=LEDState;
+
+  //Print to serial
+  // serializeJson(doc, Serial);
+  // Serial.println();
+  // serializeJsonPretty(doc, Serial);
 
   //Serial.println("Publishing");
-  char jsonBuffer[512];//512
-  serializeJson(doc, jsonBuffer); // print to client
+  char jsonBuffer[1024];
+  serializeJson(doc, jsonBuffer); // print to client, serialises doc to jsonbuffer 
 
   client.publish(AWS_IOT_PUBLISH_TOPIC, jsonBuffer);
 }
@@ -96,7 +124,6 @@ void messageHandler(String &topic, String &payload) {
  deserializeJson(doc, payload);
  const char* message = doc["message"];
  const char* UID = doc["UID"];
- //Serial.println(message);
 }
 
 void awsloop() {
