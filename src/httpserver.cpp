@@ -1,22 +1,7 @@
-// // HTTP Webserver to post and recieve data for mobile application, adapted from: https://randomnerdtutorials.com/esp32-http-get-post-arduino/#http-get-2
-
-#include <HTTPClient.h>
-#include <ArduinoJson.h>
-#include <Int64String.h>
+#include "httpserver.h"
 
 //char* serverName = ""; //Domain name with URL path or IP address with path
 //char* publishName = ""; //Domain name with URL path or IP address with path
-
-extern int lightreading; // declare as global variable
-extern double tempreading;
-extern double pressurereading;
-extern double humidityreading;
-extern bool LEDEN;
-extern bool WaterEN;
-extern bool Powersaving;
-extern int sleepduration;
-extern double targetpercentage;
-extern bool tankempty;
 
 void setupapp(){
   String setupstring = "";
@@ -28,7 +13,7 @@ void setupapp(){
 
   http.addHeader("Content-Type", "application/json");
   DynamicJsonDocument doc(400);
-  doc["1"] = 1; //Int
+  doc["1"] = 1; //Int to initalise account
 
   char jsonBuffer[1024];
   serializeJson(doc, jsonBuffer); // print to client, serialises doc to jsonbuffer
@@ -99,7 +84,7 @@ void HTTPloop() {
     doc["Power Saving Mode"]["Sleep Duration"]= sleepduration; //Int(Number of seconds microcontroller sleeps for), can be overwritten to modify sleep timing
 
     doc["Alerts"]["Irrigation"]=watered; // boolean(T/F), Irrigation system has been turned on
-    doc["Alerts"]["LEDStatus"]=LEDState; // boolean(T/F), Current Status of LED Light(ON/OFF)
+    //doc["Alerts"]["LEDStatus"]=LEDState; // boolean(T/F), Current Status of LED Light(ON/OFF)
 
     char jsonBuffer[1024];
     serializeJson(doc, jsonBuffer); // print to client, serialises doc to jsonbuffer
@@ -114,12 +99,12 @@ void HTTPloop() {
 
 }
 
-// serial print variable type , TEMPORARY FUNCTION
-void types(String a) { Serial.println("it's a String"); }
-void types(int a) { Serial.println("it's an int"); }
-void types(char *a) { Serial.println("it's a char*"); }
-void types(float a) { Serial.println("it's a float"); }
-void types(bool a) { Serial.println("it's a bool"); }
+// // serial print variable type , TEMPORARY FUNCTION
+// void types(String a) { Serial.println("it's a String"); }
+// void types(int a) { Serial.println("it's an int"); }
+// void types(char *a) { Serial.println("it's a char*"); }
+// void types(float a) { Serial.println("it's a float"); }
+// void types(bool a) { Serial.println("it's a bool"); }
 
 //GET: Request for data from http server
 String httpGETRequest(const char* serverName) {
@@ -164,34 +149,4 @@ void recievejson(String payload){
     if(targetpercentage>0){
       tankempty=false;
     }
-}
-
-//TODO, CHECK WHY ITS NOT RETURNING
-//Package json data for sending
-char* packagejson(){
-  DynamicJsonDocument doc(400);
-  doc["Light"] = lightreading; //Int
-  doc["Temperature"] = tempreading; //double
-  doc["Pressure"] = pressurereading; //double
-  doc["Humidity"] = humidityreading; //double
-  doc["Battery"] = batterylevel; //float
-
-  doc["Features"]["Water Subsystem"]=WaterEN; // boolean(T/F)
-  doc["Features"]["Moisture%"]=targetpercentage; //double, target soil moisture percentage
-  doc["Features"]["LED Subsystem"]= LEDEN; // boolean(T/F)
-
-  doc["Device Info"]["Firmware"]="Sproot V5"; //String
-  doc["Device Info"]["Microcontroller"] = "Firebeetle32"; //String
-  // doc["Device Info"]["UID"] = WiFi.macAddress(); //String, UserID in terms of MAC Address
-  doc["Device Info"]["UID"] = 1; //String, UserID in terms of MAC Address
-
-  doc["Power Saving Mode"]["Enabled"]= Powersaving; // boolean(T/F), can be overwritten to disable sleep mode
-  doc["Power Saving Mode"]["Sleep Duration"]= sleepduration; //Int(Number of seconds microcontroller sleeps for), can be overwritten to modify sleep timing
-
-  doc["Alerts"]["Irrigation"]=watered; // boolean(T/F), Irrigation system has been turned on
-  doc["Alerts"]["LEDStatus"]=LEDState; // boolean(T/F), Current Status of LED Light(ON/OFF)
-
-  char jsonBuffer[1024];
-  serializeJson(doc, jsonBuffer); // print to client, serialises doc to jsonbuffer
-  return jsonBuffer;
 }

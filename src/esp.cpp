@@ -1,6 +1,6 @@
-// Setup Wifi
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
+#include "esp.h"
 
 void setupwifi(const char* ssid,const char* password){  
   // Connect to Wi-Fi
@@ -28,7 +28,6 @@ void setupwifi(const char* ssid,const char* password){
 
 // Print time from NTP server with time.h library
 #include "time.h"
-extern int hour; // declare as global variable
 
 String printLocalTime(){
   struct tm timeinfo;
@@ -47,25 +46,26 @@ String printLocalTime(){
   return time;
 }
 
+//Web Portal for wifi connection over web interface, disabled when not in use due to large size
+#if defined(AutoConEN)
+
 #include <AutoConnect.h>
 AutoConnect Portal;
 AutoConnectConfig Config;
 #include <ESPmDNS.h>
-// #include <FS.h>
-// AutoConnectAux aux1("/register_device", "Register Device");
+#include <FS.h>
+AutoConnectAux aux1("/register_device", "Register Device");
 
 void setupwifiauto(){
 
-  // //Auxiliary register device page
-  // SPIFFS.begin();
-  // File page = SPIFFS.open("/register.json", "r");
-  // Portal.load(page);
-  // page.close();
-  // SPIFFS.end();
-  // Portal.join({aux1});
-  
-  // //Enable web portal to stay on even after wifi connection
-  // Config.retainPortal = true;
+  //Auxiliary register device page
+  SPIFFS.begin();
+  File page = SPIFFS.open("/register.json", "r");
+  Portal.load(page);
+  page.close();
+  SPIFFS.end();
+  Portal.join({aux1});
+  Config.retainPortal = true; //Enable web portal to stay on even after wifi connection
   Config.apid = "sproot";
   Config.psk = "Iamsproot";
   Config.autoReconnect = true;    // Attempt automatic reconnection.
@@ -80,3 +80,5 @@ void setupwifiauto(){
 void wifiautoloop(){
   Portal.handleClient();
 }
+
+#endif

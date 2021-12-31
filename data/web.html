@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Sproot Web Portal</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-F3w7mX95PdgyTmZZMECAngseQB83DfGTowi0iMjiWaeVhAn4FJkqJByhZMI3AhiU" crossorigin="anonymous">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-/bQdsTh/da6pkI1MST/rWKFNjaCP5gBSY4sEBT38Q/9RBh9AH40zEOg7Hlq2THRZ" crossorigin="anonymous"></script>
+  <!-- more templates at https://getbootstrap.com/docs/5.1/examples/-->
+  <link rel="stylesheet" type="text/css" href="style.css" media="screen" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300&display=swap" rel="stylesheet">
+
+  <link rel="tab icon. from https://www.freepik.com" href="https://imgur.com/8OmmCfm.png">
+
+</head>
+
+<body>
+<div class="text-center">
+  <img src="https://i.imgur.com/xcwgJHd.jpg" class="rounded w-25 p-1" alt="Sproot logo">
+</div>
+
+<div class="b-example-divider" style="width: 20px;"></div>
+
+<div class="container">
+  <div class="row">
+    
+    <div class="card col-sm-5 rounded" align="center" style="background-color:rgba(174, 247, 180, 0.384);">
+      <h3>Plant</h3>
+      <p class="data_text">Plant info: <strong><span id="plant_info"></span>%PLANT_INFO%</strong></span></p>
+      <p class="data_text">Start Date: <strong><span id="start_date"></span>%START_DATE%</strong></span></p>
+      <p class="data_text">Current Days: <strong><span id="current_day"></span>%CURRENT_DAY%</strong></span></p>
+      <p class="data_text">Battery Level: <strong><span id="battery"></span>%BATTERY%</strong></span></p>
+      <!--<button type='button submit' name='D6' value='1' class='btn btn-success btn-lg'>ON</button> -->
+    </div>
+
+    <div class="b-example-divider" style="width: 10px;"></div>
+
+    <div class="card col-sm-4 rounded" align="center" style="background-color:rgb(174, 224, 247);"> 
+      <h3>Moisture</h3>
+      <p class="data_text">Current Moisture: <strong><span id='moisture'>%MOISTURE%</strong></span></p>
+      <p class="data_text">Moisture setpoint: <strong><span id='target_moisture'>%TARGET_MOISTURE%</strong></span> +- <strong><span id='variance_moisture'>%VARIANCE_MOISTURE%</span></strong></p>
+    </div>
+
+    <div class="b-example-divider" style="width: 10px;"></div>
+
+    <div class="card col-sm-4 rounded " align="center" style="background-color:rgb(240, 247, 174);">
+      <h3>Environment</h3> 
+      <p class="temperature">Light Intensity: <strong><span id="light">%LIGHT%</strong></span></p>
+      <p class="temperature">Sufficient light: <strong><span id="sufficient_light">%SUFFICIENT_LIGHT%</strong></span></p>
+      <p class="temperature">Temperature: <strong><span id="temperature"></span>%TEMPERATURE%</strong></span></p> 
+      <p class="humidity">Humidity: <strong><span id="humidity"></span>%HUMIDITY%</strong></span></p>
+      <p class="pressure">Pressure: <strong><span id="pressure"></span>%PRESSURE%</strong></span></p>
+    </div>
+ 
+  </div>
+</div>
+
+<!-- icon from https://icons.getbootstrap.com/. Additional: https://fontawesome.com/v5.15/icons?d=gallery&p=2-->
+<div class="d-flex justify-content-between py-4 my-4 border-top">
+    <button type="button" class="btn btn-info">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor">
+  <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+</svg> Github
+    </button>
+    </div>
+
+</body>
+
+<script>
+
+var gateway = `ws://${window.location.hostname}/ws`;
+  var websocket;
+  function initWebSocket() {
+    console.log('Trying to open a WebSocket connection...');
+    websocket = new WebSocket(gateway);
+    websocket.onopen    = onOpen;
+    websocket.onclose   = onClose;
+    websocket.onmessage = onMessage;
+  }
+
+  function onOpen(event) {
+    console.log('Connection opened');
+  }
+
+  function onClose(event) {
+    console.log('Connection closed');
+    setTimeout(initWebSocket, 2000);
+  }
+
+  function onMessage(event) {
+    // var state;
+    // if (event.data == "1"){
+    //   state = "ON";
+    // }
+    // else{
+    //   state = "OFF";
+    // }
+    // document.getElementById('state').innerHTML = state;
+    var object = JSON.parse(event.data); //Deserialise Json
+    console.log(object.Device_Info.Firmware);
+    document.getElementById('light').innerHTML = String(object.light);
+    document.getElementById('temperature').innerHTML = String(object.temperature);
+    document.getElementById('humidity').innerHTML = String(object.humidity);
+    document.getElementById('pressure').innerHTML = String(object.pressure);
+    document.getElementById('battery').innerHTML = String(object.battery);
+    document.getElementById('moisture').innerHTML = String(object.Features.moisture);
+    document.getElementById('sufficient_light').innerHTML = String(object.Features.sufficient_light);
+    document.getElementById('target_moisture').innerHTML = String(object.Features.target_moisture);
+    document.getElementById('variance_moisture').innerHTML = String(object.Features.variance_moisture);
+  }
+
+  window.addEventListener('load', onLoad);
+  function onLoad(event) {
+    initWebSocket();
+    initButton();
+  }
+
+  function initButton() {
+    document.getElementById('button').addEventListener('click', toggle);
+  }
+  function toggle(){
+    websocket.send('toggle');
+  }
+  </script>
+
+</html>
+
+

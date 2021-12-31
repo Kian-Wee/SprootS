@@ -16,36 +16,25 @@
 #include <WiFiClientSecure.h>
 #include <ArduinoJson.h>
 
-
+#include "telegram.h"
 
 extern String BOTtoken;
 extern String CHAT_ID;
 
-bool sendPhoto = false;
-
 WiFiClientSecure clientTCP;
 UniversalTelegramBot bot(BOTtoken, clientTCP);
-
 
 //Checks for new messages every 1 second.
 int botRequestDelay = 1000;
 unsigned long lastTimeBotRan;
 
+// bool sendPhoto = false;
 // #define FLASH_LED_PIN 4
 // bool flashState = LOW;
 
 String prevtext = "";
 
-extern int lightreading; // declare as global variable
-extern double tempreading;
-extern double pressurereading;
-extern double humidityreading;
-//extern int pumpdis;
-//extern int LED;
 
-//extern int pumpdis;
-extern bool WaterEN;
-extern bool LEDEN;
 
 // void configInitCamera(){
 //   Serial.println("Running configInitCamera");
@@ -256,11 +245,13 @@ void handleNewMessages(int numNewMessages) {
     Serial.println(text);
     
     String from_name = bot.messages[i].from_name;
-    if (text == "/start" or text == "/help" or text == "help" or text == "Help") {
+    //if (text == "/start" or text == "/help" or text == "help" or text == "Help" or text == "HELP") {
+    if (text.equalsIgnoreCase("/start") == true || text.equalsIgnoreCase("/help") == true) { 
       String welcome = "Welcome , " + from_name + "\n";
       welcome += "Use the following commands to interact with the ESP32-CAM \n";
       //welcome += "/photo : takes a new photo\n";
       //welcome += "/flash : toggles flash LED \n";
+      welcome += "/web : send web server ip address \n";
       welcome += "/pump : water plants \n";
       welcome += "/resettank : reset water tank after refilling \n";
       welcome += "/sensor : show sensor readings \n";
@@ -348,6 +339,9 @@ void handleNewMessages(int numNewMessages) {
     if (text== "/battery"){
       caculatebatterylevel(voltagesens);
       bot.sendMessage(bot.messages[i].chat_id, String(batterylevel), "");
+    }
+    if (text== "/web" or "/web_portal" or "/portal"){
+      bot.sendMessage(bot.messages[i].chat_id, "http://" + String(WiFi.localIP()), "");
     }
   }
 }
@@ -451,7 +445,7 @@ void telesetup(){
   // }
 
   clientTCP.setCACert(TELEGRAM_CERTIFICATE_ROOT); // Add root certificate for api.telegram.org
-
+  clientTCP.setInsecure();
   Serial.println("Successfully initalised telesetup");
 }
 
@@ -476,7 +470,7 @@ void teleloop() {
     
     while (numNewMessages) {
       Serial.println("got response");
-      handleNewMessages(numNewMessages);
+      handleNewMessagesunique(numNewMessages);
       numNewMessages = bot.getUpdates(bot.last_message_received + 1);
     }
     lastTimeBotRan = millis();

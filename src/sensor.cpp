@@ -1,10 +1,9 @@
-extern int lightreading; // declare as global variable
-extern double tempreading;
-extern double pressurereading;
-extern double humidityreading;
+#include <sensor.h>
   
-//for wire library Wire.pins(SDA,SCL);
-//for two wire, change the wire.begin(SDA,SCL)
+//for wire library, use Wire.pins(SDA,SCL);
+//for two wire library, change the wire.begin(SDA,SCL)
+
+#if defined(VEML7700)
 
 #include "DFRobot_VEML7700.h"
 DFRobot_VEML7700 als;
@@ -14,6 +13,7 @@ void setupVEML7700(){
 }
 
 void loopVEML7700(){
+
   float lux;
   
   als.getALSLux(lux);
@@ -24,6 +24,11 @@ void loopVEML7700(){
   lightreading=lux;
 
 }
+
+#endif
+
+
+#if defined(BH1750)
 
 #include <hp_BH1750.h>
 hp_BH1750 BH; //???For some reason using object name BH1750 yields definiton errors
@@ -50,7 +55,13 @@ void loopBH1750() {
   Serial.print("BH1750 Reading:"); Serial.print(val); Serial.println("");
 }
 
-#include "Zanshin_BME680.h"  // Include the BME680 Sensor library
+#endif
+
+
+
+#if defined(BME680)
+
+#include "Zanshin_BME680.h"  // Library from https://github.com/Zanduino/BME680
 /**************************************************************************************************
 ** Declare all program constants                                                                 **
 **************************************************************************************************/
@@ -158,6 +169,11 @@ void loopBME680() {
   //Wire.endTransmission();
 }  // of method loop()
 
+#endif
+
+#if defined(BME280)
+
+//Library from Adafruit
 #include <Adafruit_BME280.h>
 
 Adafruit_BME280 bme; // use I2C interface
@@ -202,28 +218,13 @@ void loopBME280() {
 
   Serial.println();
 }
+#endif
 
 
 
+#if defined(BMP280)
 
-/***************************************************************************
-  This is a library for the BMP280 humidity, temperature & pressure sensor
-
-  Designed specifically to work with the Adafruit BMP280 Breakout
-  ----> http://www.adafruit.com/products/2651
-
-  These sensors use I2C or SPI to communicate, 2 or 4 pins are required
-  to interface.
-
-  Adafruit invests time and resources providing this open source code,
-  please support Adafruit andopen-source hardware by purchasing products
-  from Adafruit!
-
-  Written by Limor Fried & Kevin Townsend for Adafruit Industries.
-  BSD license, all text above must be included in any redistribution
- ***************************************************************************/
-
-
+// Library from Adafruit
 #include <Adafruit_BMP280.h>
 
 #define BMP_SCK  (13)
@@ -237,7 +238,7 @@ Adafruit_BMP280 bmp; // I2C
 
 void setupBMP280() {
   Serial.println(F("BMP280 setup"));
-  bmp.begin(0x76);
+  bmp.begin(0x76); // Some cheaper BMP280 sensors have this address
   /* Default settings from datasheet. */
   bmp.setSampling(Adafruit_BMP280::MODE_NORMAL,     /* Operating Mode. */
                   Adafruit_BMP280::SAMPLING_X2,     /* Temp. oversampling */
@@ -263,3 +264,4 @@ void loopBMP280() {
 
     Serial.println();
 }
+#endif
