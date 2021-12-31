@@ -9,21 +9,33 @@ Use Visual Studio Code and the PlatformIO plugin to flash the firmware and uploa
 
 ### Libraries
 The following libraries are required.
-[Arduino-ESP32*( LGPL-2.1)*](https://github.com/espressif/arduino-esp32)
-[DFRobot_VEML7700-master*(MIT)*](https://github.com/DFRobot/DFRobot_VEML7700) (if required)
-[BME680*(GPL-3.0)*](https://github.com/Zanduino/BME680) (if required)
+
+[Arduino-ESP32 *( LGPL-2.1)*](https://github.com/espressif/arduino-esp32)
+
+[DFRobot_VEML7700-master *(MIT)*](https://github.com/DFRobot/DFRobot_VEML7700) (if required)
+
+[BME680 *(GPL-3.0)*](https://github.com/Zanduino/BME680) (if required)
+
 [Adafruit BME280 Library](https://github.com/adafruit/Adafruit_BME280_Library) (if required)
+
 [Adafruit BMP280 Library](https://github.com/adafruit/Adafruit_BMP280_Library) (if required)
-[ArduinoJson*(MIT)*](https://github.com/bblanchon/ArduinoJson)
-[Autoconnect*(MIT)*](https://github.com/Hieromon/AutoConnect) (if a captive wifi setup webpage is required)
-[hp_BH1750*(MIT)*](https://github.com/Starmbi/hp_BH1750)
-[Int64String*(MIT)*](https://github.com/djGrrr/Int64String)
-[UniversalTelegramBot*(MIT)*](https://github.com/witnessmenow/Universal-Arduino-Telegram-Bot)
+
+[ArduinoJson *(MIT)*](https://github.com/bblanchon/ArduinoJson)
+
+[Autoconnect *(MIT)*](https://github.com/Hieromon/AutoConnect) (if a captive wifi setup webpage is required)
+
+[hp_BH1750 *(MIT)*](https://github.com/Starmbi/hp_BH1750)
+
+[Int64String *(MIT)*](https://github.com/djGrrr/Int64String)
+
+[UniversalTelegramBot *(MIT)*](https://github.com/witnessmenow/Universal-Arduino-Telegram-Bot)
 
 ### HTML/JS Libraries
 (These are included in the web portal and automatically downloaded via CDN)
-[Bootstrap*(MIT)*](https://getbootstrap.com/)
-[Chart.js*(MIT)*](https://www.chartjs.org/)
+
+[Bootstrap *(MIT)*](https://getbootstrap.com/)
+
+[Chart.js *(MIT)*](https://www.chartjs.org/)
 
 ### Code Setup
 In the ```main.cpp``` file, uncomment and enter in your network ssid and password. The other settings may be left unchanged. The ```config.h``` file provides other settings such as pinout definitions and the sensors in use.
@@ -44,12 +56,16 @@ All of these sensors may be purchased on aliexpress.
 VEML7700
 
 #### Environment Sensors
+
 **BMP280**([cheaper BME280 on aliexpress are usually BMP280](https://goughlui.com/2018/08/05/note-bosch-sensortec-bmp280-vs-bme280-sensor-confusion/), but it performs sufficiently well)
+
 BME280 (Measures Humidity in adition to BMP280)
+
 BME680 (more accurate and costly than the BME280)
 
 #### Soil Moisture Sensors
 *Do note that calibration is required for different soil types*
+
 **Capacitive Soil Moisture sensor**([sample listing](https://www.aliexpress.com/item/4001131897353.html?spm=a2g0o.productlist.0.0.4e6b4b8506mfOR&algo_pvid=2f884ae7-8af6-4514-9e48-394b6093bfcd&algo_exp_id=2f884ae7-8af6-4514-9e48-394b6093bfcd-1&pdp_ext_f=%7B%22sku_id%22%3A%2210000014716905676%22%7D))
 
 ### Sensor configuration
