@@ -5,6 +5,7 @@
   Rui Santos
   Complete project details at http://randomnerdtutorials.com  
 *********/
+// Other html reference taken from w3schools.com
 
 #include <ESPmDNS.h> //DNS
 #include <SPIFFS.h>
@@ -12,6 +13,7 @@
 //Initalises webpage variables on bootup/refresh
 //Seems like if values are initalised here, it will not update with onmessage
 //CANT BE LEFT EMPTY, HAS TO HAVE A VARIABLE THAT EXIST. ELSE WILL THROW HEAP ERROR
+//remove init requires string
 String webupdate(const String& var){
   // //Serial.println(var);
   if(var == "PLANT_INFO"){
@@ -51,6 +53,9 @@ String webupdate(const String& var){
   // return String();
 }
 
+String graphupdate(const String& var){
+
+}
 
 
 
@@ -128,6 +133,10 @@ void asyncwebserversetup(){
     request->send(SPIFFS, "/style.css", "text/css");
   });
   
+  server.on("/graph", HTTP_GET, [](AsyncWebServerRequest *request){
+    //request->send(SPIFFS, "/web.html"); //this works but doesnt update values
+    request->send(SPIFFS, "/graph.html");  //send request on root(/) page to web.html
+  });
   // // Route to set GPIO to HIGH
   // server.on("/on", HTTP_GET, [](AsyncWebServerRequest *request){
   //   digitalWrite(ledPin, HIGH);    
@@ -164,7 +173,7 @@ void updatedata(){
   doc["Features"]["LED_subsystem"]= LEDEN; // boolean(T/F)
   doc["Features"]["sufficient_light"]=0; // boolean(T/F)
 
-  doc["Device_Info"]["Firmware"]="SprootS V1"; //String
+  doc["Device_Info"]["Firmware"]=version; //String
   doc["Device_Info"]["Microcontroller"] = "Firebeetle32"; //String
   //doc["Device Info"]["UID"] = WiFi.macAddress(); //String, UserID in terms of MAC Address
   //doc["Device Info"]["UID"] = String(ESP.getChipId(), HEX);
