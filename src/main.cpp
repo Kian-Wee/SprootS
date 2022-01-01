@@ -198,7 +198,7 @@ void setup() {
     justwoke=true;
   }
 
-  //sometimes monkey brain decides to turn on http without enabling wifi which results in wierd errors
+  //turning on http without enabling wifi results in wierd errors
   if ((TeleEN==true || ServerEN==true  || HTTPEN==true || ServerEN==true) && WifiEN==false){
     Serial.println("Overwritting wifi param");
     WifiEN=true;
