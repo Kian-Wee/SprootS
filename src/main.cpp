@@ -30,6 +30,8 @@
 // String BOTtoken = "";  // Bot Token (Get from @Botfather)
 // String CHAT_ID = ""; // Use @IDBot to find out the chat ID of an individual or a group, notifications are sent to this user(if configured)
 
+String version="SprootS V1";
+
 bool TelePrivate= 1; //If set to true(1), only the autohrised user(defined by CHAT_ID) is allowed to communicate with the bot, if set to false, anyone may communicate with it
 
 // LIGHT SUBSYSTEM ----------------------------------------------------
