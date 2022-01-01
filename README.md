@@ -83,3 +83,6 @@ Future iterations to the PCB may include capacitors to fix this issue.
 
 ### Solar panel
 TBC
+
+## Other notes
+This project is a standalone version of Sproot forked from https://github.com/Kian-Wee/Sproot
