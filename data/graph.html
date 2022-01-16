@@ -1,5 +1,7 @@
 <!-- reference taken from https://github.com/acrobotic/Ai_Demos_ESP8266/blob/master/bmp180_gui/bmp180_gui.ino-->
 
+<!-- a download="filename" https://www.w3schools.com/tags/tag_dialog.asp-->
+
 <html>
 
 <head>
@@ -13,26 +15,44 @@
 </div>
 <hr />
 <div>
-  <canvas id="line-chart" width="800" height="450"></canvas>
+  <canvas id="temperature-line-chart" width="800" height="450"></canvas>
+</div>
+<div>
+  <canvas id="moisture-line-chart" width="800" height="450"></canvas>
+</div>
+<div>
+  <canvas id="light-line-chart" width="800" height="450"></canvas>
+</div>
+<div>
+  <canvas id="battery-line-chart" width="800" height="450"></canvas>
+</div>
+<div>
+  <canvas id="pressure-line-chart" width="800" height="450"></canvas>
 </div>
 
 <!-- Adding a websocket to the client (webpage) -->
 <script>
-  var webSocket, dataPlot;
+
+  var webSocket, tempearturePlot, moistureplot, lightplot, batteryplot, perssureplot;
   var maxDataPoints = 20;
-  function removeData(){
+
+  function removeData(dataPlot){
     dataPlot.data.labels.shift();
     dataPlot.data.datasets[0].data.shift();
   }
-  function addData(label, data) {
-    if(dataPlot.data.labels.length > maxDataPoints) removeData();
+
+  function addData(dataPlot, label, data) {
+    if(dataPlot.data.labels.length > maxDataPoints) removeData(dataPlot);
     dataPlot.data.labels.push(label);
     dataPlot.data.datasets[0].data.push(data);
     dataPlot.update();
   }
+
   function init() {
-    webSocket = new WebSocket('ws://' + window.location.hostname + ':81/');
-    dataPlot = new Chart(document.getElementById("line-chart"), {
+
+    webSocket = new WebSocket(`ws://${window.location.hostname}/ws`);
+
+    temperaturePlot = new Chart(document.getElementById("temperature-line-chart"), {
       type: 'line',
       data: {
         labels: [],
@@ -44,11 +64,64 @@
         }]
       }
     });
+    moisturePlot = new Chart(document.getElementById("moisture-line-chart"), {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [{
+          data: [],
+          label: "Moisture (%)",
+          borderColor: "#3e95cd",
+          fill: false
+        }]
+      }
+    });
+    lightPlot = new Chart(document.getElementById("light-line-chart"), {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [{
+          data: [],
+          label: "Light (lux)",
+          borderColor: "#3e95cd",
+          fill: false
+        }]
+      }
+    });
+    batteryPlot = new Chart(document.getElementById("battery-line-chart"), {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [{
+          data: [],
+          label: "Battery (%)",
+          borderColor: "#3e95cd",
+          fill: false
+        }]
+      }
+    });
+    pressurePlot = new Chart(document.getElementById("pressure-line-chart"), {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [{
+          data: [],
+          label: "Pressure (Pa)",
+          borderColor: "#3e95cd",
+          fill: false
+        }]
+      }
+    });
+
     webSocket.onmessage = function(event) {
       var data = JSON.parse(event.data);
       var today = new Date();
       var t = today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
-      addData(t, data.temperature);
+      addData(temperaturePlot, t, data.temperature);
+      addData(moisturePlot, t, data.Features.moisture);
+      addData(lightPlot, t, data.light);
+      addData(batteryPlot, t, data.battery);
+      addData(pressurePlot, t, data.pressure);
     }
   }
   function sendDataRate(){

@@ -16,3 +16,5 @@ void estimatewatercapacity();
 double moisturepercentage();
 
 void refillwater();
+
+void updatewater();

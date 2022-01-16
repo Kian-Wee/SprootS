@@ -13,13 +13,15 @@ medium mediumarr[3]={};
 String selected_medium = "soil_generic";
 RTC_DATA_ATTR double selected_retention=0;
 RTC_DATA_ATTR double selected_dry=1850;
-RTC_DATA_ATTR double selected_wet=1260;
+RTC_DATA_ATTR double selected_wet=1300;
 
 
 void setupWater(){
 
   // create file with presets on first boot
   if(createfile("/water.txt") == 0){
+
+    //Create 3 different soil presets
     medium soil_generic;
     soil_generic.retention=0.517;
     soil_generic.dry=3345;
@@ -37,8 +39,7 @@ void setupWater(){
 
     medium mediumarr[3]={soil_generic,hydroton_generic,soil_ogreenliving};
 
-    // for(i=0; i< sizeof(numbers)/sizeof(int);i++){
-    // iterate through list of mediums, converted to string for storage
+    // iterate through list of mediums, convert to string for storage
     String tempstr = String("Medium_Name") + String("\t") + String("Water_Retention") + String("\t") + String("Dry_Value") + String("\t") + String("Wet_Value");
     for(auto const& i : mediumarr){
       tempstr += "\n";
@@ -72,7 +73,7 @@ bool writemediumsettings(medium newmedium){
   //Convert Text String into medium class
 
   //
-
+    // for(i=0; i< sizeof(numbers)/sizeof(int);i++){
     for (auto const& i : mediumarr){ // loop through array //int i=0; i< length(mediumarr); i++
       //if medium already exist, overwrite settings
       if (i.name==newmedium.name){
@@ -159,6 +160,7 @@ void refillwater(){
 
       while(analogRead(moistsens) > targetsum && tankempty==false){
         digitalWrite(pumpdis,HIGH);
+        Serial.println(analogRead(moistsens));
 
           //Timer to check if there is still water in reservior
           if (millis() - startTime >= pumptimeout*1000 && analogRead(moistsens) <= (initalmoisture + 60) && tankempty==false) { //10 threshold originally
@@ -190,6 +192,7 @@ void refillwater(){
       int startTime; //start timer to check for timeout
       startTime=millis();
       int initalmoisture=analogRead(moistsens);
+      //APPEND FOR MID RUNOUT
 
       while (wetnesspercentage < (targetpercentage + variancepercentage)){
         digitalWrite(pumpdis,HIGH);
@@ -217,4 +220,9 @@ void refillwater(){
   }
 
 }
+}
+
+void updatewater(){
+  //Calculates percentage of current wetness based on measured medium constants
+  wetnesspercentage= double(selected_dry-analogRead(moistsens))/double(selected_dry-selected_wet);
 }

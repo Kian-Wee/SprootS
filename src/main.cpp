@@ -73,14 +73,14 @@ RTC_DATA_ATTR bool tankempty = false; //true if water tank is detected to be emp
 
 // PLANT SPECIFIC
 const int potcapacity = 1000; //grams of pot medium, needs to be caculated multiplied by retention rate
-double wetnesspercentage = 0; //current wetness percentage, updated every call
-RTC_DATA_ATTR double variancepercentage = 0.2;
-RTC_DATA_ATTR double targetpercentage = 0.5;
+RTC_DATA_ATTR double wetnesspercentage = 0; //current wetness percentage, updated every call
+RTC_DATA_ATTR double variancepercentage = 0.1;
+RTC_DATA_ATTR double targetpercentage = 0.4;
 
 //// IOT FUNCTIONALITY----------------------------------------------------
 
 // Wifi 
-bool WifiEN = true;
+bool WifiEN = false;
 
 // Time
 const char* ntpServer = "pool.ntp.org";
@@ -114,7 +114,7 @@ bool PCBEN=true;
 //4 - Predictive Adaptive deep sleep: Uses weather forecase to turn on during sunny hours
 //5 - Automatic: Toggles sleep duration and power saving modes depending on how much power is remaining
 // Power saving mode, goes into deep sleep after every cycle for sleepduration seconds
-RTC_DATA_ATTR bool Powersaving = true; 
+RTC_DATA_ATTR bool Powersaving = false; 
 int powermode = 1;
 const int defaultsleepdurationm = 60; // in minutes
 const int defaultsleepdurations = 0; // in seconds
@@ -124,7 +124,7 @@ RTC_DATA_ATTR int sleepduration = defaultsleepdurations + defaultsleepdurationm*
 // Allows for user to prevent microcontroller to go into deep sleep after tapping it on,
 // during normal operations it will poll all services once and go back to sleep
 const bool TouchEN =true;
-int touchduration=60; //Time in seconds that the ESP32 will remain awake after using touch interrupt pin
+int touchduration=180; //Time in seconds that the ESP32 will remain awake after using touch interrupt pin
 int touchtime=0;
 bool Touched=false;
 bool justwoke=false;
@@ -150,8 +150,12 @@ void setup() {
   Serial.begin(115200);
   Serial.println("Initialising Serial");
 
-  pinMode(pumpdis,OUTPUT);
-  digitalWrite(pumpdis,LOW);
+  if (WaterEN == true){
+    pinMode(pumpdis,OUTPUT);
+    digitalWrite(pumpdis,LOW);
+    pinMode(moistsens,INPUT);
+    setupWater();
+  }
 
   if (PCBEN == true){
     Serial.println("Turning on Sensors");
@@ -187,11 +191,6 @@ void setup() {
     }else{
       digitalWrite(LED,LOW);//NMOS LOGIC
     }
-  }
-
-  if (WaterEN == true){
-    pinMode(moistsens,INPUT);
-    setupWater();
   }
 
   if (Powersaving==true && TouchEN==true){
@@ -241,6 +240,10 @@ void setup() {
 
 }
 
+//simple test function
+void checkanalogvalue(int analogpin){
+  Serial.println(analogRead(analogpin));
+}
 
 
 // main body, continously runs if deepsleep is disabled, else it runs through once before returning to sleep
@@ -328,6 +331,9 @@ void loop(){
       dmsendtelegrammessage(msgstring);
     }else if(TeleUpdate && TouchEN==true && justwoke==true){
       dmsendtelegrammessage(msgstring);
+    }else{
+      Serial.println("Currently in quiet hours, not watering");
+      updatewater();
     }
   }
 
@@ -363,15 +369,14 @@ void loop(){
     
   }
 
+  checkanalogvalue(moistsens);
+
+
   Serial.println("-------------------------------------------------------");
   Serial.println();
-  delay(1000);//delay loop if not in sleepmode to prevent spamming
+  delay(500);//delay loop if not in sleepmode to prevent spamming
 }
 
-//simple test function
-void checkanalogvalue(int analogpin){
-  Serial.println(analogRead(analogpin));
-}
 
 //print function to reduce serial overhead at runtime
 //IMPORTANCE Levels

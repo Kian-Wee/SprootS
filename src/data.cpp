@@ -6,11 +6,10 @@
 #include <SD.h>
 #include "esp.h"
 
-
 // Store and retrieve data using SPIFFS to keep track of plant growth
 // Reference https://diyprojects.io/esp32-get-started-spiff-library-read-write-modify-files/#.YWKgv9pByiP
 
-// Currently using SPIFFS instead of LittleFS due to the more involved setup of LittleFS
+// Currently using SPIFFS instead of LittleFS due to the more involved setup of LittleFS, might swap in the future if required
 
 //String filename = "/data.txt";
 
