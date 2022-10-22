@@ -4,6 +4,8 @@ SprootS is a standalone automated low cost solution for horticulture. To keep co
 
 Currently, the web portal may only be accessed on a local area network for security but a telegram bot is avaliable for remote use of certain commands.
 
+[Web Portal](https://imgur.com/kIq0dKb)
+
 ##  Software Installation
 Use Visual Studio Code and the PlatformIO plugin to flash the firmware and upload the filesystem image(for webpage). The arduino core for esp32 is also required.
 

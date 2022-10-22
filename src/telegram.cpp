@@ -64,6 +64,8 @@ void handleNewMessagesunique(int numNewMessages) {
       welcome += "/LEDOFF : override and turn off led \n";
       welcome += "/PUMPON : override and turn on pump \n";
       welcome += "/PUMPOFF : override and turn off pump \n";
+      welcome += "/POWERON : override and turn on Power saving mode \n";
+      welcome += "/POWEROFF : override and turn off power saving mode \n";
       bot.sendMessage(CHAT_ID, welcome, "");
     }
 
@@ -93,11 +95,12 @@ void handleNewMessagesunique(int numNewMessages) {
     if (text== "/moisture"){
       bot.sendMessage(CHAT_ID, "Target water percentage is: " + String(targetpercentage), "");
       bot.sendMessage(CHAT_ID, "Enter new percentage from(0 to 100):", "");
-      //read message
     }
+    // Prompt to enter new moisture setpoint on the second text after moisture, ignored if number is not between 0 to 100
     if (prevtext== "/moisture"){
-      if (text.toInt() >=0 and text.toInt() <=100){
-        targetpercentage=text.toInt()/100;
+      if (isDigit(text[0]) == 1 && text.toInt() >=0 && text.toInt() <=100){
+        targetpercentage=float(text.toInt())/100;
+        bot.sendMessage(CHAT_ID, "New moisture setpoint is " + String(targetpercentage), "");
       }else{
         bot.sendMessage(CHAT_ID, "Invalid percentage", "");
       }
@@ -137,6 +140,16 @@ void handleNewMessagesunique(int numNewMessages) {
       LEDEN=false;
       bot.sendMessage(CHAT_ID, "Admin mode activated, subsystems deactivated", "");
     }
+
+    if (text== "/POWERON"){
+      Powersaving=true;
+      bot.sendMessage(CHAT_ID, "Turned on Power Saving", "");
+    }
+    if (text== "/POWEROFF"){
+      Powersaving=false;
+      bot.sendMessage(CHAT_ID, "Turned off Power Saving", "");
+    }
+
 
     if (text== "/web" or text== "/webportal" or text== "/ip"){
       bot.sendMessage(CHAT_ID, String("http://"+ WiFi.localIP().toString()), "");

@@ -129,3 +129,4 @@ extern bool quieth;
 extern int startsleep;
 extern int endsleep;
 extern String version;
+extern String diaryname;

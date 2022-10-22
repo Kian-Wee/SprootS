@@ -10,14 +10,11 @@
 #include "telegram.h"
 #include "water.h"
 #include "httpserver.h"
+#include "data.h"
 
 /** CHANGELOG
- * Restructured code functions and adapted from ino to cpp and header files
- * Changed from Sync webserver to async websocket server to remove sync issues and futureproof
- * Updated webpage to include realtime updates
- * Changed to define to save memory and speed up compile times for unsed features
- * Fixed Misc Typos and bugs
- * Misc Power consumption improvements, Fixed large integer sleep issue
+ * Removed FSBrowser OTA code(for now)
+ * Fixed Misc data storage bugs
  */
 
 //Current WIP setup: standard irrigation/ dutch bucket
@@ -53,7 +50,7 @@ const int LEDmodeconfig=3; // 0-stable threshhold, 1-moving median, 2- weather p
 // Growth Mediums are defined in config.h
 RTC_DATA_ATTR bool WaterEN = true; //enabled if automatic irrigation system is avliable
 //SEEMS TO BE AFFECTED BY IF SERIAL IS CONNECTED OR NOT
-const String type = "Standard"; // Watering mode
+const String type = "Sprinkler"; // Watering mode
 const double timetoml = 0; //convert duration the pump is on to ml dispensed
 int mediumcapacity = 0;
 bool watered = false; //notification variable if the plant has been watered
@@ -77,10 +74,13 @@ RTC_DATA_ATTR double wetnesspercentage = 0; //current wetness percentage, update
 RTC_DATA_ATTR double variancepercentage = 0.1;
 RTC_DATA_ATTR double targetpercentage = 0.4;
 
+//// PLANT DIARIES----------------------------------------------------
+RTC_DATA_ATTR String diaryname ="";
+
 //// IOT FUNCTIONALITY----------------------------------------------------
 
 // Wifi 
-bool WifiEN = false;
+bool WifiEN = true;
 
 // Time
 const char* ntpServer = "pool.ntp.org";
@@ -89,7 +89,7 @@ const int daylightOffset_sec = 0;
 int hour = -1; //current hour of the day
 
 // Telegram
-RTC_DATA_ATTR bool TeleEN = true; 
+RTC_DATA_ATTR bool TeleEN = false; 
 bool TeleUpdate = false; //Sends a status update message everytime the planter is online
 
 // Web server
@@ -116,13 +116,12 @@ bool PCBEN=true;
 // Power saving mode, goes into deep sleep after every cycle for sleepduration seconds
 RTC_DATA_ATTR bool Powersaving = false; 
 int powermode = 1;
-const int defaultsleepdurationm = 60; // in minutes
+const int defaultsleepdurationm = 120; // in minutes
 const int defaultsleepdurations = 0; // in seconds
 RTC_DATA_ATTR int sleepduration = defaultsleepdurations + defaultsleepdurationm*60;
 
 // Touch pin
-// Allows for user to prevent microcontroller to go into deep sleep after tapping it on,
-// during normal operations it will poll all services once and go back to sleep
+// Allows for user to prevent microcontroller to go into deep sleep after tapping it on, during normal operations it will poll all services once and go back to sleep
 const bool TouchEN =true;
 int touchduration=180; //Time in seconds that the ESP32 will remain awake after using touch interrupt pin
 int touchtime=0;
@@ -154,6 +153,13 @@ void setup() {
     pinMode(pumpdis,OUTPUT);
     digitalWrite(pumpdis,LOW);
     pinMode(moistsens,INPUT);
+
+    // Initialize SPIFFS to store data
+    if(!SPIFFS.begin(true)){
+      Serial.println("An Error has occurred while mounting SPIFFS");
+      return;
+    }
+    //Create a file to store soil moisture settings on inital boot
     setupWater();
   }
 
@@ -167,7 +173,7 @@ void setup() {
     caculatebatterylevel(voltagesens);
   }
 
-  //Initalises light and environment sensors if defined
+  //Initalises defined light and environment sensors
   #if defined(VEML7700)
     setupVEML7700();
   #endif
@@ -193,13 +199,14 @@ void setup() {
     }
   }
 
+  //Setup touch interrupts to allow wake from deepsleep
   if (Powersaving==true && TouchEN==true){
     touchAttachInterrupt(T0, callback, TouchThreshold);
     esp_sleep_enable_touchpad_wakeup();
-    justwoke=true;
+    justwoke=true; //used to print wakeup reason once
   }
 
-  //turning on http without enabling wifi results in wierd errors
+  //Turning on http without enabling wifi results in weird errors, force override
   if ((TeleEN==true || ServerEN==true  || HTTPEN==true || ServerEN==true) && WifiEN==false){
     Serial.println("Overwritting wifi param");
     WifiEN=true;
@@ -208,6 +215,7 @@ void setup() {
   if (WifiEN==true){
     Serial.println("Setting up Wifi");
 
+    // Either initalise autoconnect library for web based connection or use prestored SSID and password
     #if defined(AutoConEN)
       setupwifiauto();
     #else
@@ -225,7 +233,6 @@ void setup() {
 
   if (ServerEN == true){
     Serial.println("Initalising Webserver");
-    //webserversetup();
     asyncwebserversetup();
   }
 
@@ -257,24 +264,16 @@ void loop(){
     digitalWrite(POWON,HIGH); //turn on sensors
   }
 
-  //checkanalogvalue(moistsens);
-
   sleepduration = defaultsleepdurations + defaultsleepdurationm*60; //resets the sleep duration, can be overwritten by functions below
 
-  if(WifiEN == true){
-    Serial.print("Running Main Loop, Current Time: ");
-    printLocalTime();
-    #if defined(AutoConEN)
-      //Serial.println("Polling web portal");
-      wifiautoloop();
-    #endif
-  }
+
 
   // //Temporarily disabled until gpio is changed from adc2
   // if (BatteryEN==true){
   //   batterylevel=caculatebatterylevel(voltagesens);
   // }
 
+  //Update sensor values
   #if defined(VEML7700)
     loopVEML7700();
   #endif
@@ -301,14 +300,25 @@ void loop(){
     }
   }
 
+  if(WifiEN == true){
+    Serial.print("Running Main Loop, Current Time: ");
+    printLocalTime();
+    #if defined(AutoConEN)
+      //Serial.println("Polling web portal");
+      wifiautoloop();
+    #endif
+  }
+  
   //TEMP DEBUGGING
   //Refill water, only used if the app/http server is not enabled
   //if http server is enabled, it refills water between get and send request
   if (WaterEN==true && HTTPEN==false){
     if (quieth==false){
-      refillwater();
+      refillwater(type);
     }else if (hour < startsleep && hour > endsleep){ //if quiet hours is activated, only refill during the day
-      refillwater();
+      refillwater(type);
+    }else{
+      Serial.println("Currently in quiet hours, not watering");
     }
     
   }
@@ -326,7 +336,6 @@ void loop(){
     + "Soil Moisture=" + wetnesspercentage;
     Serial.print("Sending this"); Serial.println(msgstring);
 
-    //dmsendtelegrammessagestring(msgstring);
     if (TeleUpdate == true && TouchEN==false){
       dmsendtelegrammessage(msgstring);
     }else if(TeleUpdate && TouchEN==true && justwoke==true){
@@ -341,6 +350,7 @@ void loop(){
   if (ServerEN == true){
     Serial.println("Running Web Server Loop");
     webserverloop();
+    // SPIFFS.end(); //unmount SPIFFS filesystem, seems like only needed in OTA Update and not deep sleep
   }
 
   if(HTTPEN == true){
@@ -368,8 +378,7 @@ void loop(){
     }
     
   }
-
-  checkanalogvalue(moistsens);
+  
 
 
   Serial.println("-------------------------------------------------------");

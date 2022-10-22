@@ -44,7 +44,7 @@ void HTTPloop() {
     Serial.println();
 
     if(WaterEN==true){
-      refillwater();
+      refillwater(type);
       if(tankempty==true){
         targetpercentage=0;
       }

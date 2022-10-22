@@ -4,7 +4,7 @@
 
 /** Data Storage for plant logging
  * On the files, the first line includes plant name, start date, growth plan
- * On subsequent lines, time, moisture, temperature, light, and other supported sensors
+ * On subsequent lines, time, moisture, temperature, light, and other misc data
  */
 
 
@@ -18,4 +18,8 @@ void storemoisturesettings();
 
 String consolidatedata();
 
-String initfileheaders();
+String initplantfileheaders();
+
+bool storeplantdata(String filename);
+
+bool setupplantdata(String filename);

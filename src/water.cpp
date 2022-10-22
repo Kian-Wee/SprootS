@@ -1,11 +1,6 @@
 #include "water.h"
 #include "data.h"
 
-// extern String selected_medium = "soil_generic";
-// extern double selected_retention=0;
-// extern double selected_dry=0;
-// extern double selected_wet=0;
-
 // medium mediumarr;
 medium mediumarr[3]={};
 
@@ -13,13 +8,14 @@ medium mediumarr[3]={};
 String selected_medium = "soil_generic";
 RTC_DATA_ATTR double selected_retention=0;
 RTC_DATA_ATTR double selected_dry=1850;
-RTC_DATA_ATTR double selected_wet=1300;
-
+RTC_DATA_ATTR double selected_wet=950;
 
 void setupWater(){
 
   // create file with presets on first boot
-  if(createfile("/water.txt") == 0){
+  if(createfile("/water.txt") == 1){
+
+    Serial.println("TRYING TO STORE");
 
     //Create 3 different soil presets
     medium soil_generic;
@@ -46,10 +42,35 @@ void setupWater(){
       String astr= i.name + "\t" + i.retention + "\t" + i.dry + "\t" + i.wet;
       tempstr += astr;
     }
-    storedata("/water.txt",tempstr); //write data in string format to text file
+    Serial.print("STORING ");
+    Serial.println(tempstr);
+    //write data in string format to text file, check if successful
+    if(storedata("/water.txt",tempstr)==0) Serial.println("Error storing water data");
+
     }
 
-  storemoisturesettings();
+  // storemoisturesettings(); //Add new soil settings
+
+}
+
+//Store Soil moisture settings in file
+void storemoisturesettings(){
+  if (createfile("/soil.txt") == 1){
+    Serial.println("Soil Moisture file does not exist, creating and storing now");
+    // String tempstring = "Medium";
+    // tempstring += "/t";
+    // tempstring += mediumdry;
+    // #ifdef SOIL_GENERIC
+    //   tempstring += "Generic_Soil";
+    // #elif defined HYDROTON_GENERIC
+    //   tempstring += "Generic_Hydroton";
+    // #elif defined SOIL_OGREENLIVING
+    //   tempstring += "OGREENLIVING_Soil"; 
+    // #endif
+
+  }else{
+    Serial.println("Storing soil moisture settings");
+  }
 
 }
 
@@ -114,10 +135,11 @@ double moisturepercentage(){
 
 //Irrigates plant when growth medium is dry
 //TODO CLEANUP NESTED IF STATEMENTS
-void refillwater(){
+void refillwater(String type){
 // Currently there are 3 methods of watering
 // Standard: waters whenever falls below the set moisture/wetness percentage
 // Percentage(WIP): waters around a certain percentage within a threshold
+// Sprinkler simply dispenses water without a closed loop feedback
 
   watered=false;
 
@@ -219,6 +241,12 @@ void refillwater(){
       Serial.println("Not Dispensing water");
   }
 
+}else if(type == "Sprinkler"){
+  Serial.println("Sprinkling Water");
+  digitalWrite(pumpdis,HIGH);
+  delay(5000);
+  digitalWrite(pumpdis,LOW);
+  Serial.println("No Longer Sprinkling Water");
 }
 }
 

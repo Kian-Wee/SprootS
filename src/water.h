@@ -15,6 +15,6 @@ void estimatewatercapacity();
 
 double moisturepercentage();
 
-void refillwater();
+void refillwater(String type);
 
 void updatewater();

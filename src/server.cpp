@@ -1,15 +1,19 @@
+/** Web Server
+ * The webpages utilises websockets to allow for live sensor readings
+ * and changing of parameters on multiple client devices
+ * 
+ * Reference code taken from Rui Santos at http://randomnerdtutorials.com  
+ * Other html reference taken from w3schools.com
+ */
+
 #include "server.h"
-
-/*********
-  Local Web Server. code adapted from
-  Rui Santos at http://randomnerdtutorials.com  
-*********/
-// Other html reference taken from w3schools.com
-
-#include <ESPmDNS.h> //DNS
+#include <ESPmDNS.h>
 #include <SPIFFS.h>
+#include <ArduinoJson.h>
 
-String devicename="Sproot"; //Name of webserver
+AsyncWebServer server(80); // Create AsyncWebServer object on port 80
+AsyncWebSocket ws("/ws");
+String devicename="Sproot2"; //Name of webserver
 
 //Initalises webpage variables on bootup/refresh
 //Seems like if values are initalised here, it will not update with onmessage
@@ -40,40 +44,40 @@ String webupdate(const String& var){
   // }else if(var=="VARIANCEPER"){
   //   return String(variancepercentage);
   // }
-  
-  //delete
-  // if(var == "STATE"){
-  //   if (ledState){
-  //     return "ON";
-  //   }
-  //   else{
-  //     return "OFF";
-  //   }
-  // }
-  // return String();
 }
 
-String graphupdate(const String& var){
-
+// Callback for setting page whenever websocket.send is called
+String settingupdate(const String& var){
+  if(var == "PLANT_INFO"){
+    return "PLACEHOLDER";
+  }
 }
 
-
-
-AsyncWebServer server(80); // Create AsyncWebServer object on port 80
-AsyncWebSocket ws("/ws");
-
-void notifyClients() {
-  ws.textAll(String("ledState")); //temp
-}
-
+// Handles toggling of settings via the web interface
 void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
   AwsFrameInfo *info = (AwsFrameInfo*)arg;
   if (info->final && info->index == 0 && info->len == len && info->opcode == WS_TEXT) {
     data[len] = 0;
-    // if (strcmp((char*)data, "toggle") == 0) {
-    //   ledState = !ledState;
-    //   notifyClients();
-    // }
+
+    DynamicJsonDocument doc(400);
+    if (strcmp((char*)data, "LED_EN toggle") == 0) {
+      LEDEN = !LEDEN; // Change/Invert the current state whenever the button is toggled
+      // ws.textAll(String("ledState")); // Update all other connected clients through onMessage (websocket)function
+      doc["Features"]["LED_subsystem"]= LEDEN; // boolean(T/F)
+    }else if (strcmp((char*)data, "Water_EN toggle") == 0) {
+      WaterEN = !WaterEN; // Change/Invert the current state whenever the button is toggled
+      doc["Features"]["water_subsystem"]= WaterEN; // boolean(T/F)
+    }else if (strcmp((char*)data, "QuietHours_EN toggle") == 0) {
+      quieth = !quieth; // Change/Invert the current state whenever the button is toggled
+      doc["Features"]["quiet_hours"]=quieth;// boolean(T/F)
+    }else if (strcmp((char*)data, "Power_EN toggle") == 0) {
+      Powersaving = !Powersaving; // Change/Invert the current state whenever the button is toggled
+      doc["Power"]["saving"]= Powersaving; // boolean(T/F), can be overwritten to disable sleep mode
+    }
+
+  char jsonBuffer[1024];
+  size_t len = serializeJson(doc, jsonBuffer); // print to client, serialises doc to jsonbuffer
+  ws.textAll(jsonBuffer, len); // Update all other connected clients through onMessage (websocket)function
   }
 }
 
@@ -86,7 +90,7 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
       Serial.printf("WebSocket client #%u disconnected\n", client->id());
       break;
     case WS_EVT_DATA:
-      handleWebSocketMessage(arg, data, len);
+      handleWebSocketMessage(arg, data, len); // If data is sent back from the (setting)webpage, call function
       break;
     case WS_EVT_PONG:
     case WS_EVT_ERROR:
@@ -95,24 +99,16 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
 }
 
 void initWebSocket() {
-  ws.onEvent(onEvent);
+  ws.onEvent(onEvent); // Callback for all websocket interactions
   server.addHandler(&ws);
 }
 
 // -------------------------------------------------------------------------------------------------------
 
-// #include <ArduinoOTA.h>
-
 #include <FS.h>
-// #include <SPIFFS.h>
-// #include <ESPmDNS.h>
-// #include <WiFi.h>
 #include <AsyncTCP.h>
-
 #include <ESPAsyncWebServer.h>
 #include <SPIFFSEditor.h>
-
-// AsyncEventSource events("/events"); //Server Sent Events
 
 void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len){
   if(type == WS_EVT_CONNECT){
@@ -186,58 +182,18 @@ void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventT
   }
 }
 
-
-// const char* ssid = "*******";
-// const char* password = "*******";
-const char * hostName = "esp-async";
 const char* http_username = "admin";
 const char* http_password = "admin";
 
 void FSBrowsersetup(){
-  // Serial.begin(115200);
-  // Serial.setDebugOutput(true);
-  // WiFi.mode(WIFI_AP_STA);
-  // WiFi.softAP(hostName);
-  // WiFi.begin(ssid, password);
-  // if (WiFi.waitForConnectResult() != WL_CONNECTED) {
-  //   Serial.printf("STA: Failed!\n");
-  //   WiFi.disconnect(false);
-  //   delay(1000);
-  //   WiFi.begin(ssid, password);
-  // }
-
-  // //Send OTA events to the browser
-  // ArduinoOTA.onStart([]() { events.send("Update Start", "ota"); });
-  // ArduinoOTA.onEnd([]() { events.send("Update End", "ota"); });
-  // ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
-  //   char p[32];
-  //   sprintf(p, "Progress: %u%%\n", (progress/(total/100)));
-  //   events.send(p, "ota");
-  // });
-  // ArduinoOTA.onError([](ota_error_t error) {
-  //   if(error == OTA_AUTH_ERROR) events.send("Auth Failed", "ota");
-  //   else if(error == OTA_BEGIN_ERROR) events.send("Begin Failed", "ota");
-  //   else if(error == OTA_CONNECT_ERROR) events.send("Connect Failed", "ota");
-  //   else if(error == OTA_RECEIVE_ERROR) events.send("Recieve Failed", "ota");
-  //   else if(error == OTA_END_ERROR) events.send("End Failed", "ota");
-  // });
-  // ArduinoOTA.setHostname(hostName);
-  // ArduinoOTA.begin();
 
   MDNS.addService("http","tcp",80);
   mdns_hostname_set(devicename.c_str()); //MDNS name for easier access in local network
 
-  // SPIFFS.begin();
-
   ws.onEvent(onWsEvent);
   server.addHandler(&ws);
 
-  // events.onConnect([](AsyncEventSourceClient *client){
-  //   client->send("hello!",NULL,millis(),1000);
-  // });
-  // server.addHandler(&events);
-
-  server.addHandler(new SPIFFSEditor(SPIFFS, http_username,http_password)); //FS Browser library
+  server.addHandler(new SPIFFSEditor(SPIFFS)); //FS Browser library
   
   // server.on("/heap", HTTP_GET, [](AsyncWebServerRequest *request){
   //   request->send(200, "text/plain", String(ESP.getFreeHeap()));
@@ -308,11 +264,6 @@ void FSBrowsersetup(){
   server.begin();
 }
 
-// void FSBrowserloop(){
-//   ArduinoOTA.handle();
-//   ws.cleanupClients();
-// }
-
 // -------------------------------------------------------------------------------------------------------
 
 void asyncwebserversetup(){
@@ -328,30 +279,27 @@ void asyncwebserversetup(){
   }
   Serial.println("mDNS responder started");
 
-  // Initialize SPIFFS
-  if(!SPIFFS.begin(true)){
-    Serial.println("An Error has occurred while mounting SPIFFS");
-    return;
-  }
-
-  // Route for root / web page
+  // Load root(/) web page with callback
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
     //request->send(SPIFFS, "/web.html"); //this works but doesnt update values
     request->send(SPIFFS, "/web.html", String(), false, webupdate);  //send request on root(/) page to web.html
   });
   
-  // Route to load style.css file
+  // Load style.css file
   server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send(SPIFFS, "/style.css", "text/css");
   });
   
+  // Load Graph Webpage
   server.on("/graph", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send(SPIFFS, "/graph.html");
   });
 
+  // Load Setting webpage with callback
   server.on("/setting", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(200, "text/plain", "Coming Soon");
+    request->send(SPIFFS, "/setting.html", String(), false, settingupdate);
   });
+
   // FSBrowser loaded by SPIFFSEditor
 
   // // Route to set GPIO to HIGH
@@ -373,8 +321,6 @@ void asyncwebserversetup(){
   server.begin();
 }
 
-#include <ArduinoJson.h> // Include ArduinoJson Library
-
 // Updates server by sending serialised json file
 void updatedata(){
   DynamicJsonDocument doc(400);
@@ -384,21 +330,22 @@ void updatedata(){
   doc["humidity"] = int(humidityreading); //double
   doc["battery"] = batterylevel; //float
 
-  doc["Features"]["water_subsystem"]= WaterEN; // boolean(T/F)
   doc["Features"]["target_moisture"]= int(targetpercentage*100); //double, target soil moisture percentage
   doc["Features"]["variance_moisture"]= int(variancepercentage*100);
   doc["Features"]["moisture"]= int(wetnesspercentage*100);
+
   doc["Features"]["LED_subsystem"]= LEDEN; // boolean(T/F)
+  doc["Features"]["water_subsystem"]= WaterEN; // boolean(T/F)
+  doc["Features"]["quiet_hours"]=quieth;// boolean(T/F)
   doc["Features"]["sufficient_light"]=0; // boolean(T/F)
 
   doc["Device_Info"]["Firmware"]=version; //String
   doc["Device_Info"]["Microcontroller"] = "Firebeetle32"; //String
   //doc["Device Info"]["UID"] = WiFi.macAddress(); //String, UserID in terms of MAC Address
   //doc["Device Info"]["UID"] = String(ESP.getChipId(), HEX);
-  //doc["Device_Info"]["UID"] = 1; //String, UserID in terms of MAC Address
 
-  doc["Power Saving Mode"]["Enabled"]= Powersaving; // boolean(T/F), can be overwritten to disable sleep mode
-  doc["Power Saving Mode"]["Sleep Duration"]= sleepduration; //Int(Number of seconds microcontroller sleeps for), can be overwritten to modify sleep timing
+  doc["Power"]["saving"]= Powersaving; // boolean(T/F), can be overwritten to disable sleep mode
+  doc["Power"]["sleep_duration"]= sleepduration; //Int(Number of seconds microcontroller sleeps for), can be overwritten to modify sleep timing
 
   doc["Alerts"]["Irrigation"]=watered; // boolean(T/F), Irrigation system has been turned on
   //doc["Alerts"]["LEDStatus"]=LEDState; // boolean(T/F), Current Status of LED Light(ON/OFF)
