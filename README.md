@@ -32,6 +32,8 @@ The following libraries are required.
 
 [UniversalTelegramBot *(MIT)*](https://github.com/witnessmenow/Universal-Arduino-Telegram-Bot)
 
+The [ESPAsyncWebServer](https://github.com/me-no-dev/ESPAsyncWebServer) library is used along with its AsyncWebSocket plugin to serve the webpage quickly to multiple devices.
+
 ### HTML/JS Libraries
 (These are included in the web portal and automatically downloaded via CDN)
 

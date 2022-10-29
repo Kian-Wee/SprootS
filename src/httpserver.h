@@ -1,3 +1,6 @@
+
+// CODE IS DEPRECIATED, REFER TO SERVER.CPP INSTEAD
+
 #pragma once
 
 // extern int lightreading; // declare as global variable

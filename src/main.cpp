@@ -151,7 +151,7 @@ void setup() {
 
   if (WaterEN == true){
     pinMode(pumpdis,OUTPUT);
-    digitalWrite(pumpdis,LOW);
+    digitalWrite(pumpdis,LOW); // Disables all pumps on boot
     pinMode(moistsens,INPUT);
 
     // Initialize SPIFFS to store data

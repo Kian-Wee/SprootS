@@ -1,3 +1,6 @@
+
+// CODE IS DEPRECIATED, REFER TO SERVER.CPP INSTEAD
+
 #include "httpserver.h"
 
 //char* serverName = ""; //Domain name with URL path or IP address with path

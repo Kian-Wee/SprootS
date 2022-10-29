@@ -11,9 +11,22 @@
 #include <SPIFFS.h>
 #include <ArduinoJson.h>
 
+#include <FS.h>
+#include <AsyncTCP.h>
+#include <ESPAsyncWebServer.h>
+#include <SPIFFSEditor.h>
+
 AsyncWebServer server(80); // Create AsyncWebServer object on port 80
 AsyncWebSocket ws("/ws");
 String devicename="Sproot2"; //Name of webserver
+
+// const char* http_username = "admin";
+// const char* http_password = "admin";
+
+extern bool LEDEN;
+extern bool WaterEN;
+extern bool quieth;
+extern bool Powersaving;
 
 //Initalises webpage variables on bootup/refresh
 //Seems like if values are initalised here, it will not update with onmessage
@@ -98,18 +111,8 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
   }
 }
 
-void initWebSocket() {
-  ws.onEvent(onEvent); // Callback for all websocket interactions
-  server.addHandler(&ws);
-}
-
 // -------------------------------------------------------------------------------------------------------
-
-#include <FS.h>
-#include <AsyncTCP.h>
-#include <ESPAsyncWebServer.h>
-#include <SPIFFSEditor.h>
-
+/*
 void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len){
   if(type == WS_EVT_CONNECT){
     Serial.printf("ws[%s][%u] connect\n", server->url(), client->id());
@@ -181,17 +184,9 @@ void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventT
     }
   }
 }
-
-const char* http_username = "admin";
-const char* http_password = "admin";
+ */ 
 
 void FSBrowsersetup(){
-
-  MDNS.addService("http","tcp",80);
-  mdns_hostname_set(devicename.c_str()); //MDNS name for easier access in local network
-
-  ws.onEvent(onWsEvent);
-  server.addHandler(&ws);
 
   server.addHandler(new SPIFFSEditor(SPIFFS)); //FS Browser library
   
@@ -199,7 +194,7 @@ void FSBrowsersetup(){
   //   request->send(200, "text/plain", String(ESP.getFreeHeap()));
   // });
 
-  server.serveStatic("/debug", SPIFFS, "index.htm"); //( url to be served at, SPIFFS, file to be served) 
+  server.serveStatic("/debug", SPIFFS, "index.html"); //( url to be served at, SPIFFS, file to be served) 
 
   server.onNotFound([](AsyncWebServerRequest *request){
     Serial.printf("NOT_FOUND: ");
@@ -261,65 +256,10 @@ void FSBrowsersetup(){
     if(index + len == total)
       Serial.printf("BodyEnd: %u\n", total);
   });
-  server.begin();
+
 }
 
 // -------------------------------------------------------------------------------------------------------
-
-void asyncwebserversetup(){
-
-  Serial.println("Web Server Setup");
-
-  // Set up mDNS responder, allows webpage access on desktop(and safari) browsers through hostname
-  if (!MDNS.begin(devicename.c_str())) {
-      Serial.println("Error setting up MDNS responder!");
-      while(1) {
-          delay(1000);
-      }
-  }
-  Serial.println("mDNS responder started");
-
-  // Load root(/) web page with callback
-  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
-    //request->send(SPIFFS, "/web.html"); //this works but doesnt update values
-    request->send(SPIFFS, "/web.html", String(), false, webupdate);  //send request on root(/) page to web.html
-  });
-  
-  // Load style.css file
-  server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(SPIFFS, "/style.css", "text/css");
-  });
-  
-  // Load Graph Webpage
-  server.on("/graph", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(SPIFFS, "/graph.html");
-  });
-
-  // Load Setting webpage with callback
-  server.on("/setting", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(SPIFFS, "/setting.html", String(), false, settingupdate);
-  });
-
-  // FSBrowser loaded by SPIFFSEditor
-
-  // // Route to set GPIO to HIGH
-  // server.on("/on", HTTP_GET, [](AsyncWebServerRequest *request){
-  //   digitalWrite(ledPin, HIGH);    
-  //   request->send(SPIFFS, "/index.html", String(), false, processor);
-  // });
-  
-  // // Route to set GPIO to LOW
-  // server.on("/off", HTTP_GET, [](AsyncWebServerRequest *request){
-  //   digitalWrite(ledPin, LOW);    
-  //   request->send(SPIFFS, "/index.html", String(), false, processor);
-  // });
-
-  initWebSocket();
-
-  FSBrowsersetup();
-
-  server.begin();
-}
 
 // Updates server by sending serialised json file
 void updatedata(){
@@ -353,6 +293,66 @@ void updatedata(){
   char jsonBuffer[1024];
   size_t len = serializeJson(doc, jsonBuffer); // print to client, serialises doc to jsonbuffer
   ws.textAll(jsonBuffer, len);
+}
+
+void asyncwebserversetup(){
+
+  Serial.println("Web Server Setup");
+
+  // Set up mDNS responder, allows webpage access on desktop(and safari) browsers through hostname
+  if (!MDNS.begin(devicename.c_str())) {
+      Serial.println("Error setting up MDNS responder!");
+      while(1) {
+          delay(1000);
+      }
+  }
+  // MDNS.addService("http","tcp",80);
+  // mdns_hostname_set(devicename.c_str()); //MDNS name for easier access in local network
+  Serial.println("mDNS responder started");
+
+  // Load root(/) web page with callback
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+    //request->send(SPIFFS, "/web.html"); //this works but doesnt update values
+    request->send(SPIFFS, "/web.html", String(), false, webupdate);  //send request on root(/) page to web.html
+  });
+  
+  // Load style.css file
+  server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send(SPIFFS, "/style.css", "text/css");
+  });
+  
+  // Load Graph Webpage
+  server.on("/graph", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send(SPIFFS, "/graph.html");
+  });
+
+  // Load Setting webpage with callback
+  server.on("/setting", HTTP_GET, [](AsyncWebServerRequest *request){
+    // request->send(SPIFFS, "/setting.html", String(), false, settingupdate);
+    request->send(SPIFFS, "/setting.html");
+  });
+
+  // FSBrowser loaded by SPIFFSEditor
+
+  // // Route to set GPIO to HIGH
+  // server.on("/on", HTTP_GET, [](AsyncWebServerRequest *request){
+  //   digitalWrite(ledPin, HIGH);    
+  //   request->send(SPIFFS, "/index.html", String(), false, processor);
+  // });
+  
+  // // Route to set GPIO to LOW
+  // server.on("/off", HTTP_GET, [](AsyncWebServerRequest *request){
+  //   digitalWrite(ledPin, LOW);    
+  //   request->send(SPIFFS, "/index.html", String(), false, processor);
+  // });
+
+  // Init webserver
+  ws.onEvent(onEvent); // Callback for all websocket interactions
+  server.addHandler(&ws);
+
+  FSBrowsersetup();
+
+  server.begin();
 }
 
 void webserverloop(){
